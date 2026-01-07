@@ -1,4 +1,3 @@
-
 /**
  * README Pro - High-Fidelity Export Engine
  * Refined to prevent "Blank PDF" errors by using industry-standard workarounds.
@@ -10,7 +9,6 @@ declare const html2pdf: any;
  * Ensures all assets are loaded, fonts are ready, and layout has settled.
  */
 const waitForRenderReady = async (container: HTMLElement) => {
-  // 1. Wait for all images to load and decode
   const images = Array.from(container.querySelectorAll('img'));
   const imagePromises = images.map(async (img) => {
     try {
@@ -30,10 +28,7 @@ const waitForRenderReady = async (container: HTMLElement) => {
     }
   });
 
-  // 2. Wait for Web Fonts to be fully active
   const fontPromise = (document as any).fonts ? (document as any).fonts.ready : Promise.resolve();
-  
-  // 3. Delay to allow layout engine to settle
   const layoutPromise = new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 1000)));
 
   await Promise.all([...imagePromises, fontPromise, layoutPromise]);
@@ -49,7 +44,7 @@ export const downloadPDF = async (htmlContent: string, filename: string, options
   
   // THE CRITICAL FIX:
   // html2canvas fails if the element is off-screen (left: -9999px) or has negative z-index.
-  // We use fixed/top:0/left:0 with visibility:hidden and z-index:1 to keep it "renderable" but unseen.
+  // Using fixed/top:0/left:0 with visibility:hidden and z-index:1 keeps it "renderable" for the engine.
   Object.assign(sandbox.style, {
     position: 'fixed',
     top: '0',
@@ -57,9 +52,9 @@ export const downloadPDF = async (htmlContent: string, filename: string, options
     width: targetWidth,
     backgroundColor: 'white',
     color: 'black',
-    zIndex: '1',                 // Must be >= 0
+    zIndex: '1',                 // MUST be >= 0
     visibility: 'hidden',        // Element is still rendered in layout
-    pointerEvents: 'none',       // User won’t notice
+    pointerEvents: 'none',       // No user interaction
     display: 'block',
     opacity: '1',
     minHeight: '100vh',
@@ -86,7 +81,7 @@ export const downloadPDF = async (htmlContent: string, filename: string, options
 
     // Phase 3: Configuration
     const opt = {
-      margin: [10, 10, 10, 10],
+      margin: 10,
       filename: filename.endsWith('.pdf') ? filename : `${filename}.pdf`,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { 
@@ -96,7 +91,7 @@ export const downloadPDF = async (htmlContent: string, filename: string, options
         logging: false,
         width: widthPx,
         windowWidth: widthPx,
-        foreignObjectRendering: false, // Standard capture is more reliable for custom styles
+        foreignObjectRendering: false, // More reliable for custom styles/fonts
         scrollX: 0,
         scrollY: 0
       },
@@ -104,8 +99,7 @@ export const downloadPDF = async (htmlContent: string, filename: string, options
         unit: 'mm', 
         format: pdfFormat, 
         orientation: options.orientation,
-        compress: true,
-        precision: 16
+        compress: true
       },
       pagebreak: { 
         mode: ['avoid-all', 'css', 'legacy'],

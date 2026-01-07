@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TabType, ExportSettings } from './types';
 import { INITIAL_MARKDOWN, INITIAL_CSS, PRESET_THEMES } from './constants';
@@ -136,7 +135,7 @@ const App: React.FC = () => {
             /* User's Injected CSS */
             ${css}
           </style>
-          <div class="markdown-body">
+          <div class="markdown-body" style="display:block; width:100%;">
             ${htmlBody}
           </div>
         </div>

@@ -1,6 +1,5 @@
-
 import React, { useMemo } from 'react';
-import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
+import { marked } from 'marked';
 
 interface PreviewProps {
   markdown: string;
