@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TabType, ExportSettings } from './types';
 import { INITIAL_MARKDOWN, INITIAL_CSS, PRESET_THEMES } from './constants';
@@ -25,7 +24,11 @@ const App: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [appTheme, setAppTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('app-theme') as 'dark' | 'light') || 'dark';
+    try {
+      return (localStorage.getItem('app-theme') as 'dark' | 'light') || 'dark';
+    } catch {
+      return 'dark';
+    }
   });
   const [settings, setSettings] = useState<ExportSettings>({
     pageSize: 'A4',
@@ -37,7 +40,11 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem('app-theme', appTheme);
+    try {
+      localStorage.setItem('app-theme', appTheme);
+    } catch (e) {
+      console.warn("Could not save theme to localStorage", e);
+    }
   }, [appTheme]);
 
   const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -228,7 +235,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`flex flex-col h-screen overflow-hidden relative selection:bg-blue-500/30 font-sans transition-colors duration-300 ${appTheme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
+    <div className={`flex flex-col h-full min-h-screen overflow-hidden relative selection:bg-blue-500/30 font-sans transition-colors duration-300 ${appTheme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       {/* Notifications */}
       <div className="fixed top-20 right-6 z-[100] flex flex-col gap-2 w-80 pointer-events-none">
         {notifications.map(n => (
@@ -247,14 +254,14 @@ const App: React.FC = () => {
         ))}
       </div>
 
-      <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between z-10 shadow-sm dark:shadow-2xl">
+      <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between z-10 shadow-sm dark:shadow-2xl flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
             <i className="fa-solid fa-bolt text-xl"></i>
           </div>
           <div className="flex flex-col">
             <h1 className="font-black text-lg tracking-tight leading-tight text-slate-900 dark:text-white">README<span className="text-blue-500">PRO</span></h1>
-            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none">Safe-Render V2.9</span>
+            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none">Safe-Render V3.0</span>
           </div>
         </div>
 
@@ -288,7 +295,7 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex overflow-hidden p-4 gap-4">
         <div className="w-1/2 flex flex-col gap-4">
-          <div className="flex gap-1.5 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-fit shadow-sm">
+          <div className="flex gap-1.5 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-fit shadow-sm flex-shrink-0">
             {(['markdown', 'css', 'js', 'settings'] as TabType[]).map(tab => (
               <button
                 key={tab}
@@ -363,7 +370,7 @@ const App: React.FC = () => {
             )}
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 flex gap-3 items-center shadow-xl dark:shadow-2xl focus-within:border-blue-500/50 transition-colors">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 flex gap-3 items-center shadow-xl dark:shadow-2xl focus-within:border-blue-500/50 transition-colors flex-shrink-0">
             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
               <i className="fa-solid fa-wand-magic-sparkles"></i>
             </div>
@@ -386,7 +393,7 @@ const App: React.FC = () => {
         </div>
 
         <div className="w-1/2 flex flex-col gap-4">
-          <div className="flex items-center justify-between px-2 h-10">
+          <div className="flex items-center justify-between px-2 h-10 flex-shrink-0">
             <h2 className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
               <i className="fa-solid fa-circle-play text-blue-500 animate-pulse"></i> LIVE PREVIEW ENGINE
             </h2>
@@ -418,7 +425,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <footer className="h-8 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
+      <footer className="h-8 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest flex-shrink-0">
         <div className="flex gap-6">
            <span className="flex items-center gap-2"><i className="fa-solid fa-align-left opacity-50"></i> {markdown.length} CHRS</span>
            <span className="flex items-center gap-2"><i className="fa-solid fa-code-branch opacity-50"></i> {css.split('\n').length} STYLE RULES</span>
