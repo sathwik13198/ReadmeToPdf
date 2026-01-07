@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { TabType, ExportSettings } from './types';
 import { INITIAL_MARKDOWN, INITIAL_CSS, PRESET_THEMES } from './constants';
 import { refineMarkdown, suggestCSS } from './services/geminiService';
@@ -23,6 +24,9 @@ const App: React.FC = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [appTheme, setAppTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('app-theme') as 'dark' | 'light') || 'dark';
+  });
   const [settings, setSettings] = useState<ExportSettings>({
     pageSize: 'A4',
     orientation: 'portrait',
@@ -32,12 +36,21 @@ const App: React.FC = () => {
     previewMode: 'responsive'
   });
 
+  useEffect(() => {
+    localStorage.setItem('app-theme', appTheme);
+  }, [appTheme]);
+
   const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now();
     setNotifications(prev => [...prev, { message, type, id }]);
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 4000);
+  };
+
+  const toggleAppTheme = () => {
+    setAppTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    notify(`Switched to ${appTheme === 'dark' ? 'Light' : 'Dark'} Mode`, 'info');
   };
 
   const handleFetchGithub = async () => {
@@ -215,64 +228,73 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden relative selection:bg-blue-500/30 font-sans">
+    <div className={`flex flex-col h-screen overflow-hidden relative selection:bg-blue-500/30 font-sans transition-colors duration-300 ${appTheme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
       {/* Notifications */}
       <div className="fixed top-20 right-6 z-[100] flex flex-col gap-2 w-80 pointer-events-none">
         {notifications.map(n => (
           <div key={n.id} className={`pointer-events-auto p-4 rounded-xl shadow-2xl border backdrop-blur-md transition-all animate-slide-in flex items-start gap-3 ${
             n.type === 'success' ? 'bg-emerald-900/80 border-emerald-500/50 text-emerald-100' :
-            n.type === 'error' ? 'bg-rose-900/80 border-rose-500/50 text-rose-100' : 'bg-slate-800/90 border-slate-600/50 text-slate-100'
+            n.type === 'error' ? 'bg-rose-900/80 border-rose-500/50 text-rose-100' : 
+            appTheme === 'dark' ? 'bg-slate-800/90 border-slate-600/50 text-slate-100' : 'bg-white/90 border-slate-200 text-slate-900'
           }`}>
             <div className="mt-0.5">
               {n.type === 'success' && <i className="fa-solid fa-circle-check text-emerald-400"></i>}
               {n.type === 'error' && <i className="fa-solid fa-circle-exclamation text-rose-400"></i>}
-              {n.type === 'info' && <i className="fa-solid fa-gear fa-spin text-blue-400"></i>}
+              {n.type === 'info' && <i className="fa-solid fa-gear fa-spin text-blue-500"></i>}
             </div>
             <p className="text-sm font-medium leading-relaxed">{n.message}</p>
           </div>
         ))}
       </div>
 
-      <header className="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between z-10 shadow-2xl">
+      <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between z-10 shadow-sm dark:shadow-2xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
             <i className="fa-solid fa-bolt text-xl"></i>
           </div>
           <div className="flex flex-col">
-            <h1 className="font-black text-lg tracking-tight leading-tight">README<span className="text-blue-500">PRO</span></h1>
-            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none">Safe-Render V2.8</span>
+            <h1 className="font-black text-lg tracking-tight leading-tight text-slate-900 dark:text-white">README<span className="text-blue-500">PRO</span></h1>
+            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none">Safe-Render V2.9</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={handleFetchGithub} className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold border border-slate-700 transition-all active:scale-95">
+          <button 
+            onClick={toggleAppTheme} 
+            className="p-2 w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all active:scale-95 border border-slate-200 dark:border-slate-700 mr-2"
+            title={appTheme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {appTheme === 'dark' ? <i className="fa-solid fa-sun text-yellow-500"></i> : <i className="fa-solid fa-moon text-blue-600"></i>}
+          </button>
+          
+          <button onClick={handleFetchGithub} className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all active:scale-95">
             <i className="fa-brands fa-github"></i> FETCH
           </button>
-          <button onClick={handlePrint} className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold border border-slate-700 transition-all active:scale-95">
+          <button onClick={handlePrint} className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all active:scale-95">
             <i className="fa-solid fa-print"></i> PRINT
           </button>
-          <div className="hidden md:block h-6 w-[1px] bg-slate-700 mx-1"></div>
-          <button onClick={handleExportHTML} className="group flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg text-xs font-bold border border-slate-700 transition-all active:scale-95">
-             <i className="fa-solid fa-code text-blue-400 group-hover:scale-110 transition-transform"></i> HTML
+          <div className="hidden md:block h-6 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+          <button onClick={handleExportHTML} className="group flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all active:scale-95">
+             <i className="fa-solid fa-code text-blue-500 group-hover:scale-110 transition-transform"></i> HTML
           </button>
-          <button onClick={handleExportWord} disabled={isExportingWord} className="group flex items-center gap-2 px-3 py-1.5 bg-sky-700 hover:bg-sky-600 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50 active:scale-95">
+          <button onClick={handleExportWord} disabled={isExportingWord} className="group flex items-center gap-2 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm">
             {isExportingWord ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-file-word text-white/80 group-hover:scale-110 transition-transform"></i>} WORD
           </button>
-          <button onClick={handleExportPDF} disabled={isExportingPDF} className="group flex items-center gap-2 px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-black transition-all shadow-lg shadow-rose-900/20 disabled:opacity-50 active:scale-95">
+          <button onClick={handleExportPDF} disabled={isExportingPDF} className="group flex items-center gap-2 px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-black transition-all shadow-lg shadow-rose-900/10 dark:shadow-rose-900/20 disabled:opacity-50 active:scale-95">
             {isExportingPDF ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-file-pdf text-white group-hover:scale-110 transition-transform"></i>} DOWNLOAD PDF
           </button>
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden bg-slate-950 p-4 gap-4">
+      <main className="flex-1 flex overflow-hidden p-4 gap-4">
         <div className="w-1/2 flex flex-col gap-4">
-          <div className="flex gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl w-fit">
+          <div className="flex gap-1.5 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-fit shadow-sm">
             {(['markdown', 'css', 'js', 'settings'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all ${
-                  activeTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'
+                  activeTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
               >
                 {tab}
@@ -280,7 +302,7 @@ const App: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex-1 relative overflow-hidden bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl">
+          <div className="flex-1 relative overflow-hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-2xl">
             {activeTab !== 'settings' ? (
               <Editor 
                 language={activeTab === 'js' ? 'javascript' : activeTab as any} 
@@ -289,50 +311,50 @@ const App: React.FC = () => {
                 label={activeTab.toUpperCase()} 
               />
             ) : (
-              <div className="p-8 flex flex-col gap-8 text-slate-300 overflow-y-auto custom-scrollbar h-full">
+              <div className="p-8 flex flex-col gap-8 text-slate-600 dark:text-slate-300 overflow-y-auto custom-scrollbar h-full">
                 <div>
-                  <h3 className="text-white text-lg font-black flex items-center gap-3">
+                  <h3 className="text-slate-900 dark:text-white text-lg font-black flex items-center gap-3">
                     <i className="fa-solid fa-sliders text-blue-500"></i> EXPORT SETTINGS
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">Fine-tune your document for professional output.</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium">Fine-tune your document for professional output.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Page Format</label>
-                    <select value={settings.pageSize} onChange={(e) => setSettings({...settings, pageSize: e.target.value as any})} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    <label className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Page Format</label>
+                    <select value={settings.pageSize} onChange={(e) => setSettings({...settings, pageSize: e.target.value as any})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                       <option>A4</option><option>Letter</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Orientation</label>
-                    <select value={settings.orientation} onChange={(e) => setSettings({...settings, orientation: e.target.value as any})} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    <label className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Orientation</label>
+                    <select value={settings.orientation} onChange={(e) => setSettings({...settings, orientation: e.target.value as any})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                       <option value="portrait">Portrait</option><option value="landscape">Landscape</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Visual Presets</label>
+                  <label className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Visual Presets</label>
                   <div className="grid grid-cols-3 gap-2">
                     {PRESET_THEMES.map(theme => (
-                      <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase border transition-all ${settings.theme === theme.id ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_15px_-5px_rgba(59,130,246,0.3)]' : 'border-slate-800 bg-slate-800/50 text-slate-500 hover:border-slate-700 hover:text-slate-300'}`}>
+                      <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase border transition-all ${settings.theme === theme.id ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-[0_0_15px_-5px_rgba(59,130,246,0.3)]' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-300'}`}>
                         {theme.name}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-8 border-t border-slate-800 flex flex-col gap-4">
-                  <button onClick={handleExportPDF} disabled={isExportingPDF} className="w-full group py-5 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 text-white rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-lg shadow-rose-900/20 active:scale-95 disabled:opacity-50">
+                <div className="pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+                  <button onClick={handleExportPDF} disabled={isExportingPDF} className="w-full group py-5 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 text-white rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-lg shadow-rose-900/10 dark:shadow-rose-900/20 active:scale-95 disabled:opacity-50">
                     {isExportingPDF ? <i className="fa-solid fa-spinner fa-spin text-xl"></i> : <i className="fa-solid fa-file-pdf text-xl group-hover:scale-110 transition-transform"></i>}
                     GENERATE PDF DOCUMENT
                   </button>
                   <div className="grid grid-cols-2 gap-4">
-                    <button onClick={handleExportWord} disabled={isExportingWord} className="py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-700 transition-all">
+                    <button onClick={handleExportWord} disabled={isExportingWord} className="py-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 transition-all shadow-sm">
                       <i className="fa-solid fa-file-word text-sky-500"></i> Word (.doc)
                     </button>
-                    <button onClick={handleExportHTML} className="py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-700 transition-all">
+                    <button onClick={handleExportHTML} className="py-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 transition-all shadow-sm">
                       <i className="fa-solid fa-code text-emerald-500"></i> Static HTML
                     </button>
                   </div>
@@ -341,14 +363,14 @@ const App: React.FC = () => {
             )}
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 flex gap-3 items-center shadow-2xl focus-within:border-blue-500/50 transition-colors">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 flex gap-3 items-center shadow-xl dark:shadow-2xl focus-within:border-blue-500/50 transition-colors">
             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
               <i className="fa-solid fa-wand-magic-sparkles"></i>
             </div>
             <input 
               type="text" 
               placeholder="Magic Refiner: 'modern minimal white' or 'dark futuristic'..." 
-              className="flex-1 bg-transparent border-none text-sm text-slate-300 outline-none placeholder:text-slate-600" 
+              className="flex-1 bg-transparent border-none text-sm text-slate-800 dark:text-slate-300 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600" 
               value={aiPrompt} 
               onChange={(e) => setAiPrompt(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && handleAiRefine()} 
@@ -365,25 +387,25 @@ const App: React.FC = () => {
 
         <div className="w-1/2 flex flex-col gap-4">
           <div className="flex items-center justify-between px-2 h-10">
-            <h2 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+            <h2 className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
               <i className="fa-solid fa-circle-play text-blue-500 animate-pulse"></i> LIVE PREVIEW ENGINE
             </h2>
-            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 shadow-lg">
+            <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-lg">
               <button 
                 onClick={() => setSettings(prev => ({ ...prev, previewMode: 'responsive' }))} 
-                className={`px-4 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all ${settings.previewMode === 'responsive' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`px-4 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all ${settings.previewMode === 'responsive' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 FLUID
               </button>
               <button 
                 onClick={() => setSettings(prev => ({ ...prev, previewMode: 'page' }))} 
-                className={`px-4 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all ${settings.previewMode === 'page' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`px-4 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all ${settings.previewMode === 'page' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 PAGE
               </button>
             </div>
           </div>
-          <div className="flex-1 drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <div className="flex-1 drop-shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
             <Preview 
               markdown={markdown} 
               css={css} 
@@ -396,13 +418,13 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <footer className="h-8 bg-slate-900 border-t border-slate-800 px-6 flex items-center justify-between text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+      <footer className="h-8 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
         <div className="flex gap-6">
            <span className="flex items-center gap-2"><i className="fa-solid fa-align-left opacity-50"></i> {markdown.length} CHRS</span>
            <span className="flex items-center gap-2"><i className="fa-solid fa-code-branch opacity-50"></i> {css.split('\n').length} STYLE RULES</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-slate-400">ENGINE STATUS: STEADY</span>
+          <span className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">ENGINE STATUS: STEADY</span>
           <span className="text-emerald-500 flex items-center gap-1.5 font-bold"><i className="fa-solid fa-check-circle"></i> SYSTEM ONLINE</span>
         </div>
       </footer>
